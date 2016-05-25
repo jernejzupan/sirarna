@@ -14,7 +14,7 @@
 #define T_COUNTER	(T_HOLD_TIME/T_DRIVER_PERIOD)
 #define T_BUFFER_SIZE	16
 
-#define T_NOT 	0
+#define T_NOKEY 	0
 
 #define T_TMASK 0xf0
 #define T1	0x10

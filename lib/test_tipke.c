@@ -20,7 +20,7 @@ int main(void)
 	uint8_t delay_release[4]={0};
 	while(1){
 		tipke_driver();
-		uint8_t tipka = tipka_get();
+		uint8_t tipka = tipke_get();
 		uint8_t i = 0;
 		
 		if (tipka) {
@@ -31,21 +31,16 @@ int main(void)
 				case T4: i=3; break;
 			}
 			
-			switch (tipke & T_SMASK){
+			switch (tipka & T_SMASK){
 				case T_UP:
-					if(delay_release[i]>0){
-						delay_release[i]--;
-					}
-					else{
-						status_char[i]='U';
-					}
+					if(delay_release[i]==0)status_char[i]='U';
 					break;
 				case T_DOWN:
 					status_char[i]='D';
 					break;
 				case T_TAP:
 					status_char[i]='T';
-					delay_release[i]=5;
+					delay_release[i]=10;
 					break;
 				case T_HOLD:
 					status_char[i]='H';
@@ -53,7 +48,15 @@ int main(void)
 				default:
 					break;
 			}
-		}		
+		}
+		
+		for (uint8_t j=0; j<4; j++){
+			if (status_char[j]=='T'){
+				if (delay_release[j]>0) delay_release[j]--;
+				else status_char[j]='U';
+			}
+		}
+					
 		line1[3]=status_char[0];
 		line1[11]=status_char[1];
 		line2[3]=status_char[2];

@@ -29,7 +29,7 @@ static void tipke_write_buffer(uint8_t val){
 	}
 }
 
-static uint8_t val tipke_read_buffer(volatile){
+static uint8_t tipke_read_buffer(void){
 	uint8_t val=T_NOKEY;
 	ATOMIC_BLOCK(ATOMIC_FORCEON)
 	{
