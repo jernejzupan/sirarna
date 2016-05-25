@@ -8,6 +8,7 @@
  #include <avr/io.h>
  #include <string.h>
  #include <stdio.h>
+ #include <util/atomic.h>
  #include "lcd.h"
  #include "display.h"
 

@@ -18,11 +18,20 @@ int main(void)
 	char line1[] = "T0=U    T1=U    ";
 	char line2[] = "T2=U    T3=U    ";
 	uint8_t delay_release[4]={0};
-    while(1)
-    {
+	while(1){
 		tipke_driver();
-		for (uint8_t i=0; i<4; i++){
-			switch (tipke_get(i)){
+		uint8_t tipka = tipka_get();
+		uint8_t i = 0;
+		
+		if (tipka) {
+			switch (tipka & T_TMASK) {
+				case T1: i=0; break;
+				case T2: i=1; break;
+				case T3: i=2; break;
+				case T4: i=3; break;
+			}
+			
+			switch (tipke & T_SMASK){
 				case T_UP:
 					if(delay_release[i]>0){
 						delay_release[i]--;

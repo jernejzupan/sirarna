@@ -6,11 +6,12 @@
  */ 
 
  #include <avr/io.h>
+ #include <util/atomic.h>
  #include "cas.h"
  
-uint8_t e = 0;
-Ura u;
-Datum d;
+volatile uint8_t e = 0;
+volatile Ura u;
+volatile Datum d;
 
 void cas_set(Datum ds, Ura us){
 	u = us;
@@ -83,9 +84,13 @@ void cas_utrip(void){
 		}
 	}
 }
-
 Datum cas_dget(void){
-	return d;
+	Datum d_ret;
+	ATOMIC_BLOCK(ATOMIC_FORCEON)
+	{
+		d_ret=d;
+	}
+	return d_ret;
 }
 
 Datum cas_dconv(uint16_t l, uint8_t m, uint8_t d){
@@ -102,7 +107,12 @@ uint8_t cas_deq(Datum d1, Datum d2){
 }
 
 Ura cas_uget(void){
-	return u;
+	Ura u_ret;
+	ATOMIC_BLOCK(ATOMIC_FORCEON)
+	{
+		u_ret=u;
+	}
+	return u_ret;
 }
 
 Ura cas_uconv(uint8_t u, uint8_t m, uint8_t s){

@@ -1,16 +1,14 @@
 /*
  * rtos.h
  *
- * Created: 14.5.2016 16:18:08
- *  Author: JernejZupan
- */ 
-
+ *  Created on: 17. maj 2016
+ *      Author: jernejzupan
+ */
 
 #ifndef RTOS_H_
 #define RTOS_H_
 
-
-
-
+int rtos_init(int val);
+int rtos_irq(int val);
 
 #endif /* RTOS_H_ */
