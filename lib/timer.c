@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <inttypes.h>
+#include "timer.h"
 
 void (*ctc_irq)(void) = 0;	//timer interrupt routine
 uint32_t _period_ms = 0;

@@ -9,6 +9,7 @@
 #ifndef POS_H_
 #define POS_H_
 
+void pos_set_stream(void);
 void pos_init (void);
 void pos_print_char(char c);
 void pos_print(char* s);

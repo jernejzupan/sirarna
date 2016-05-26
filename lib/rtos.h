@@ -8,7 +8,7 @@
 #ifndef RTOS_H_
 #define RTOS_H_
 
-int rtos_init(int val);
-int rtos_irq(int val);
+void rtos_init(void);
+void rtos_irq(void);
 
 #endif /* RTOS_H_ */

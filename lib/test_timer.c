@@ -7,7 +7,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "tiemr.h"
+#include "timer.h"
 
 #define led_on() 	{DDRD|=1<<PIND0; PORTD|=1<<PIND0;}
 #define led_off()	{PORTD&=~(1<<PIND0);}	

@@ -8,8 +8,16 @@
 
 
 #include <avr/io.h>
+#include <string.h>
+#include <stdio.h>
 #include <util/delay.h>
 #include "pos.h"
+
+static FILE pos_stream = FDEV_SETUP_STREAM(pos_print_char, NULL, _FDEV_SETUP_WRITE);
+
+void pos_set_stream(void){
+	stdout = &pos_stream; 
+}
 
 void pos_init (void) {
 	PORTB |= 0x04;

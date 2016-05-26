@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectVersion>5.1</ProjectVersion>
     <ToolchainName>com.Atmel.AVRGCC8</ToolchainName>
-    <ProjectGuid>dce6c7e3-ee26-4d79-826b-08594b9ad897</ProjectGuid>
+    <ProjectGuid>{7408b383-7aa0-4143-acfd-3a563688a2a3}</ProjectGuid>
     <avrdevice>ATmega324PA</avrdevice>
     <avrdeviceseries>none</avrdeviceseries>
     <OutputType>Executable</OutputType>
@@ -16,6 +16,32 @@
     <Name>test_rtos</Name>
     <RootNamespace>test_rtos</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
+    <avrtoolinterface>JTAG</avrtoolinterface>
+    <avrtool>com.atmel.avrdbg.tool.avrdragon</avrtool>
+    <com_atmel_avrdbg_tool_avrdragon>
+      <ToolType xmlns="">com.atmel.avrdbg.tool.avrdragon</ToolType>
+      <ToolName xmlns="">AVR Dragon</ToolName>
+      <ToolNumber xmlns="">00A200058596</ToolNumber>
+      <Channel xmlns="">
+        <host>127.0.0.1</host>
+        <port>63244</port>
+        <ssl>False</ssl>
+      </Channel>
+      <ToolOptions xmlns="">
+        <InterfaceName>JTAG</InterfaceName>
+        <InterfaceProperties>
+          <JtagDbgClock>1000000</JtagDbgClock>
+          <JtagProgClock>1000000</JtagProgClock>
+          <IspClock>150000</IspClock>
+          <JtagInChain>false</JtagInChain>
+          <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
+          <JtagDevicesBefore>0</JtagDevicesBefore>
+          <JtagDevicesAfter>0</JtagDevicesAfter>
+          <JtagInstrBitsBefore>0</JtagInstrBitsBefore>
+          <JtagInstrBitsAfter>0</JtagInstrBitsAfter>
+        </InterfaceProperties>
+      </ToolOptions>
+    </com_atmel_avrdbg_tool_avrdragon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -55,7 +81,67 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cas.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cas.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="display.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="display.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="kbd.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="kbd.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="lcd.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="lcd.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="pos.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="pos.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="rtos.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="rtos.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sens.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sens.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="test_rtos.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="timer.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="timer.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tipke.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tipke.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

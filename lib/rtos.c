@@ -5,15 +5,15 @@
  *      Author: jernejzupan
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 #include "rtos.h"
 #include "timer.h"
 #include "cas.h"
 #include "tipke.h"
 
-void rtos_empty_slice(void);
+void rtos_empty_slice(void){};
 
 void (*rtos_slice[]) (void) = {
 	 cas_utrip
@@ -53,5 +53,5 @@ void rtos_irq(void){
 	static int i=0;
 	if(i<RTOS_NUM_OF_SLICES-1) i++;
 	else i=0;
-	rtos_slice[i](0);
+	rtos_slice[i]();
 }
