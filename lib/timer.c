@@ -18,7 +18,7 @@ void t_set_ctc_irq(void (*f)(void), uint32_t period_ms){
 	_period_ms = period_ms;
 	TCCR1A = 0;					//clear timer control register 
 	TIMSK1 = (1 << OCIE1A);		//enable CTC interrupt
-	OCR1A = 124;				//interrupt period 8*(124+1)/1e6=1ms
+	OCR1A = 124-5;				//interrupt period 8*(124+1)/1e6=1ms
 				
 }
 

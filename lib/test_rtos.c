@@ -24,7 +24,7 @@ int main(void) {
 	printf("***RTOS*TEST*******RTOS*TEST****\n");
 	_delay_ms(2000);
 	
-	cas_set(cas_dconv(2016,26,5),cas_uconv(2,26,0));
+	cas_set(cas_dconv(2016,26,5),cas_uconv(2,36,0));
 	cas_start();
 	tipke_init();	
 	sens_init();
