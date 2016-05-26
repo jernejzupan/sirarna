@@ -20,6 +20,9 @@ static FILE display_stream = FDEV_SETUP_STREAM(display_putc, NULL, _FDEV_SETUP_W
 char display_buffer[DISPLAY_BUFFER_SIZE+1];
 uint8_t buffer_index;
 
+char line1_mod[DISPLAY_ROW_LEN] = {0};
+char line2_mod[DISPLAY_ROW_LEN] = {0};
+
 void display_init(){
 	lcd_init_4d();
 	display_reset_buffer();
@@ -53,13 +56,35 @@ void display_print(void){
 			if (sym = '\0') break;
 		}		
 		else {
-			if (line_select == 1 && il1 < DISPLAY_ROW_LEN) line1[il1++]=sym;
-			if (line_select == 2 && il2 < DISPLAY_ROW_LEN) line2[il2++]=sym;
+			if (line_select == 1 && il1 < DISPLAY_ROW_LEN){
+				if (line1_mod[il1]){
+					line1[il1]=line1_mod[il1];
+					line1_mod[il1++]=0;
+				}
+				else {
+					line1[il1++]=sym;
+				}
+			}
+			if (line_select == 2 && il2 < DISPLAY_ROW_LEN){
+				if (line2_mod[il2]){
+					line2[il2]=line2_mod[il2];
+					line2_mod[il2++]=0;
+				}
+				else {
+					line1[il2++]=sym;
+				}
+			}
 		}	
-	}
-	
+	}	
 	lcd_write_instruction_4d(lcd_Clear);
 	lcd_write_string_4d(line1);
 	lcd_write_instruction_4d(lcd_SetCursor|lcd_LineTwo);
 	lcd_write_string_4d(line2);
+}
+
+
+
+void display_mod(uint8_t line,uint8_t column,char c){
+	if (line==0) line1_mod[column%DISPLAY_ROW_LEN]=c;
+	if (line==1) line2_mod[column%DISPLAY_ROW_LEN]=c;
 }

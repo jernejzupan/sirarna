@@ -12,5 +12,6 @@ void display_init();
 void display_reset_buffer(void);
 void display_putc(char c);
 void display_print(void);
+void display_mod(uint8_t line,uint8_t column,char c);
 
 #endif /* CAS_H_ */

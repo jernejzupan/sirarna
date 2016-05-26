@@ -6,170 +6,236 @@
  */ 
 
 #include <avr/io.h>
-#include <string.h>
 #include <util/delay.h>
-
-#include "lib/lcd.h"
-#include "lib/kbd.h"
+#include "lib/rtos.h"
+#include "lib/cas.h"
+#include "lib/tipke.h"
+#include "lib/display.h"
+#include "lib/sens.h"
 #include "lib/pos.h"
-#include "lib/i2c.h"
 
-void count_time(uint8_t* h, uint8_t* m, uint8_t* s);
-char* print_time(char* data, uint8_t h, uint8_t m, uint8_t s);
-char num_to_char(uint8_t num);
-void pos_print_line(char* s);
-void uint32_to_str(uint32_t num, char* str_ptr);
+#define VIEW_MASK	0xf0
+#define SUBVIEW_MASK	0x0f
 
-int main(void){
-	uint8_t sys_cnt=0;
-	char data[17]={0};
-	uint8_t h=0;
-	uint8_t m=0;
-	uint8_t s=0;
-	
-	lcd_init_4d();
-	kbd_init();
+#define UI_TIME			0x10
+ #define UI_TIME_NORMAL		0x01
+#define UI_SET_TIME		0x20
+ #define UI_SET_TIME_YEAR     	0x02
+ #define UI_SET_TIME_MONTH    	0x03
+ #define UI_SET_TIME_DAY      	0x04
+ #define UI_SET_TIME_HOUR     	0x05
+ #define UI_SET_TIME_MIN      	0x06
+ #define UI_SET_TIME_SEC      	0x07
+#define UI_MEAS			0x30
+ #define UI_MEAS_NORMAL		0x01
+
+ //MODULAR INCREMENT/DECREMENT WITH UPPER AND LOWER BOUNDRY
+#define M_INCR(X,MIN,MAX) ((X+MAX-MIN+1)%MAX+MIN)
+#define M_DECR(X,MIN,MAX) ((X+MAX-MIN+1)%MAX+MIN)
+ 
+int main(void) {
+	display_init();
 	pos_init();
-	i2c_init();
+	display_reset_buffer();
+	printf("MERILNA POSTAJA#2SIRARNA");
+	display_print();
+	_delay_ms(2000);
 	
-	_delay_ms(500);
-	DDRD |= (1<<PIND6)|(1<<PIND7);
-	PORTD &= ~((1<<PIND6)|(1<<PIND7));
-	uint8_t address = 0x27 << 1;
-	uint8_t raw[4];
-	_delay_ms(500);
+	cas_set(cas_dconv(2016,26,5),cas_uconv(2,36,0));
+	cas_start();
+	tipke_init();	
+	sens_init();
+	rtos_init();
 	
+	uint16_t view_switch_cnt=0;
+	uint8_t ure_meritve=0;
+	uint8_t view_mode=UI_TIME&UI_TIME_NORMAL;
+	uint8_t tipka_hold[5]={0};
+	
+	while (1) {
+		sens_measure();		
+		Datum d=cas_dget();
+		Ura u=cas_uget();
+		tipke=get_tipke();
 		
-	lcd_write_instruction_4d(lcd_Clear);
-	lcd_write_string_4d("Merilna postaja");
-	_delay_ms(1000);
-	while(1)
-    {	
-		uint8_t refresh_lcd = 0;/*
-		switch (kbd_get()) {
-			case T0: s++; break;
-			case T1: m++; break;
-			case T2: h++; break;
-			case T3: {
-				pos_print_line("Hello world!\n"); break;
-			}
-			default: refresh_lcd=0;
-		}*/
-		/*
-		char data[31]={0};
-		static char i=224;		
-		switch (kbd_get()) {
-			case T0:
-				for (int j=0; j<30; j++)
-				{
-					data[j]=i++;
+		if (T1|T_HOLD) 	tipka_hold[1]=1;
+		if (T1|T_UP) 	tipka_hold[1]=0;
+		if (T2|T_HOLD) 	tipka_hold[2]=1;
+		if (T2|T_UP) 	tipka_hold[2]=0;
+		if (T3|T_HOLD) 	tipka_hold[3]=1;
+		if (T3|T_UP) 	tipka_hold[3]=0;
+		if (T4|T_HOLD) 	tipka_hold[4]=1;
+		if (T4|T_UP) 	tipka_hold[4]=0;
+		
+		// USER INTERFACE
+		display_reset_buffer();
+		switch (VIEW_MASK&view_mode) {
+			case UI_TIME:
+				if (tipke==T1|T_HOLD) {
+					view_mode=SET_TIME&UI_SET_TIME_YEAR;
+					view_switch_cnt=0;
+					break;
+				}			
+				if (view_switch_cnt>50 || tipke==T1|T_TAP){
+					view_mode=UI_MEAS&UI_MEAS_NORMAL;
+					view_switch_cnt=0;
+					break;
 				}
-				data[30]='\n';
-							 
-				pos_print(data);
-				break;			
-			case T1: {
-				pos_print(print_time(data, h, m, s));
-				pos_print("\n");
+				printf("%02u.%02u.%4u #2%02u:%02u:%02u"
+					, d.d, d.m, d.l, u.u, u.m, u.s);
+				view_switch_cnt++;
 				break;
-			}
-			case T2: break;
-			case T3: break;
-			default: refresh_lcd=0;	
-			}		
-		*/
-		
-		
-		if (sys_cnt==0) {
-			refresh_lcd = 1;
-			count_time(&h, &m, &s);
-			
-			i2c_start(address | I2C_WRITE);
-			_delay_ms(50);
-			i2c_receive(address, raw, 4);
-
+			case UI_MEAS:
+				if (tipke==T1|T_HOLD) {
+					view_mode=SET_TIME&UI_SET_TIME_YEAR;
+					view_switch_cnt=0;
+					break;
+				}
+				if (view_switch_cnt>50 || tipke==T1|T_TAP){
+					view_mode=UI_TIME&UI_TIME_NORMAL;
+					view_switch_cnt=0;
+					break;
+				}			
+				printf("T1=%02d.%d V1=%02d#2T2=%02d.%d V2=%02d"
+					,sens_get_temp10(0)/10, sens_get_temp10(0)%10, sens_get_hum(0)
+					,sens_get_temp10(1)/10, sens_get_temp10(1)%10, sens_get_hum(1));
+				view_switch_cnt++;
+				break;
+			case UI_SET_TIME:
+				if (tipke==T1|T_TAP) {
+					view_switch_cnt=0;
+					switch (SUBVIEW_MASK&view_mode) {
+						case UI_SET_TIME_YEAR:
+							view_mode=UI_SET_TIME&UI_SET_TIME_MONTH;
+							break;
+						case UI_SET_TIME_MONTH:
+							view_mode=UI_SET_TIME&UI_SET_TIME_DAY;
+							break;
+						case UI_SET_TIME_DAY: 
+							view_mode=UI_SET_TIME&UI_SET_TIME_HOUR;
+							break;
+						case UI_SET_TIME_HOUR:
+							view_mode=UI_SET_TIME&UI_SET_TIME_MIN;
+							break;
+						case UI_SET_TIME_MIN:
+							view_mode=UI_SET_TIME&UI_SET_TIME_SEC;
+							break;
+						case UI_SET_TIME_SEC:  
+							view_mode=UI_TIME&UI_TIME_NORMAL;
+							break;
+						default: 
+							view_mode=UI_TIME&UI_TIME_NORMAL;
+							break;							
+					}
+					break;
+				}				
+				if (tipke==T3|T_TAP || tipka_hold[3]) {
+					view_switch_cnt=0;
+					switch (SUBVIEW_MASK&view_mode) {
+						case UI_SET_TIME_YEAR:
+							cas_set(cas_dconv(d.l+1,d.m,d.d),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_MONTH:
+							cas_set(cas_dconv(d.l,M_INCR(d.m,1,12),d.d),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_DAY: 
+							cas_set(cas_dconv(d.l,d.m,M_INCR(d.d,1,31),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_HOUR:
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(M_INCR(u.u,0,23),u.m,u.s));
+							break;
+						case UI_SET_TIME_MIN:
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(u.u,M_INCR(u.m,0,60),u.s));
+							break;
+						case UI_SET_TIME_SEC:  
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(u.u,u.m,M_INCR(u.s,0,60)));
+							break;
+						default: 
+							break;							
+					}
+					break;
+				}				
+				if (tipke==T4|T_TAP || tipka_hold[4]) {
+					view_switch_cnt=0;
+					switch (SUBVIEW_MASK&view_mode) {
+						case UI_SET_TIME_YEAR:
+							cas_set(cas_dconv(d.l+1,d.m,d.d),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_MONTH:
+							cas_set(cas_dconv(d.l,M_DECR(d.m,1,12),d.d),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_DAY: 
+							cas_set(cas_dconv(d.l,d.m,M_DECR(d.d,1,31),cas_uconv(u.u,u.m,u.s));
+							break;
+						case UI_SET_TIME_HOUR:
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(M_DECR(u.u,0,23),u.m,u.s));
+							break;
+						case UI_SET_TIME_MIN:
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(u.u,M_DECR(u.m,0,60),u.s));
+							break;
+						case UI_SET_TIME_SEC:  
+							cas_set(cas_dconv(d.l,d.m,d.d),cas_uconv(u.u,u.m,M_DECR(u.s,0,60)));
+							break;
+						default: 
+							break;							
+					}
+					break;
+				}				
+				if (view_switch_cnt>200){
+					view_mode=UI_TIME&UI_TIME_NORMAL;
+					view_switch_cnt=0;
+					break;
+				}
+				printf("%02u.%02u.%4u #2%02u:%02u:%02u"
+					, d.d, d.m, d.l, u.u, u.m, u.s);
+				// MODIFIY DISPLAY OUTPUT BUFFER BEFORE PRINTING 10.10.2016
+				if ((view_switch_cnt%10)<3){
+					switch (SUBVIEW_MASK&view_mode) {
+						case UI_SET_TIME_YEAR:
+							display_mod(0,6,' ');
+							display_mod(0,7,' ');
+							display_mod(0,8,' ');
+							display_mod(0,9,' ');
+							break;
+						case UI_SET_TIME_MONTH:
+							display_mod(0,3,' ');
+							display_mod(0,4,' ');
+							break;
+						case UI_SET_TIME_DAY: 
+							display_mod(0,0,' ');
+							display_mod(0,1,' ');
+							break;
+						case UI_SET_TIME_HOUR:
+							display_mod(1,0,' ');
+							display_mod(1,1,' ');
+							break;
+						case UI_SET_TIME_MIN:
+							display_mod(1,3,' ');
+							display_mod(1,4,' ');
+							break;
+						case UI_SET_TIME_SEC:  
+							display_mod(1,6,' ');
+							display_mod(1,7,' ');
+							break;
+						default: 
+							break;						
+					}					
+				}//MODIFIY DISPLAY	
+				view_switch_cnt++;			
 		}
+		display_print();//END USER INTERFACE
 
-	
-			int16_t hum_raw = ((int16_t)raw[0])*256;
-			hum_raw += (int16_t)raw[1];
-			int16_t hum = hum_raw/164;
-	
-			int16_t temp_raw = (int16_t)raw[2]*64;
-			temp_raw += raw[3]/4;
-			int16_t temp = temp_raw/99-40;
-			int16_t temp_dec = (temp_raw/10)%10;
-			
-		if (refresh_lcd) {
-			lcd_write_instruction_4d(lcd_Clear);
-			lcd_write_instruction_4d(lcd_Home);
-			lcd_write_string_4d(print_time(data, h, m, s));
-			lcd_write_instruction_4d(lcd_SetCursor | lcd_LineTwo);	
-			char data_out[]="T1=  .  V1=     ";
-			uint32_to_str((uint32_t)temp, &data_out[3]);
-			uint32_to_str((uint32_t)temp_dec, &data_out[6]);
-			uint32_to_str((uint32_t)hum, &data_out[11]);
-			
-			data_out[16]=0;
-			lcd_write_string_4d(data_out);		
+		// PRINT EVENTS
+		if(cas_ueq(u,cas_uconv(ure_meritve,0,0))){
+				pos_set_stream();
+				printf("%02u.%02u %02u:%02u T1=%02d.%d V1=%02d T2=%02d.%d V2=%02d\n"
+				, d.d, d.m, u.u, u.m
+				,sens_get_temp10(0)/10, sens_get_temp10(0)%10, sens_get_hum(0)
+				,sens_get_temp10(1)/10, sens_get_temp10(1)%10, sens_get_hum(1));
+				ure_meritve=(ure_meritve+1)%24;
 		}
-
-		_delay_ms(100);
-		
-		if (sys_cnt < 10) sys_cnt++;
-		else sys_cnt = 0;
-    }
-}
-
-void count_time(uint8_t* h, uint8_t* m, uint8_t* s) {
-	if(*s < 59) (*s)++;
-	else { 
-		*s = 0;
-		if (*m < 59) (*m)++;
-		else {
-			*m = 0;
-			if (*h < 23) (*h)++;
-			else *h = 0;
-		}
+			
 	}
-}
-
-char* print_time(char* data, uint8_t h, uint8_t m, uint8_t s) {
-	char* p=data;
-	uint8_t val=0;
 	
-	for(uint8_t i=0; i<3; i++) {
-		p=data+3*i;
-		switch(i) {
-			case 0: val = h; break;
-			case 1: val = m; break;
-			case 2: val = s; break;
-			default: val=0;
-		}
-		p[0]=num_to_char((val/10)%10);
-		p[1]=num_to_char(val%10);
-		p[2]=':';		
-	}
-	p[2]=0;
-	return data;
+	return 0;
 }
-
-char num_to_char(uint8_t num) {
-	if (num < 10) return '0'+(char)num;
-	else return ' ';
-}
-
-void uint32_to_str(uint32_t num, char* str_ptr){
-	const char digit[] = "0123456789";	//define digits
-	char tmp_str[11]={0};	//First char is actually stop char
-	char *tmp_ptr1 = tmp_str;
-	char *tmp_ptr2 = str_ptr;
-	do{
-        *(++tmp_ptr1) = digit[num%10];	//extract units digit
-        num /= 10;					//whole num. devision right shift
-    }while(num);					//loop while any nonzero digits left
-	do{
-		*tmp_ptr2++ = *tmp_ptr1--;		//copy in reverse order
-	}while(*tmp_ptr1);				//loop until zero char detected
-	//*tmp_ptr2=0;						//set zero char
-}/* uart1_isTxBusy*/
